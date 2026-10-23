@@ -17,11 +17,11 @@ It is designed to run reliably on **PaaS platforms**, with first-class support f
 ## ✨ Features
 
 - 📦 **Automated Backups** — scheduled daily or hourly PostgreSQL backups  
-- 🔐 **Optional Encryption** — gzip compression or 7z encryption with password  
+- 🔐 **Optional Encryption** — PostgreSQL native compression, gzip streaming, or optional 7z password encryption
 - ☁️ **Cloudflare R2 Integration** — seamless S3-compatible storage support
 - 🧹 **Retention Policy** — automatically delete old backups  
 - 🔗 **Flexible Database URLs** — supports private and public PostgreSQL connection URLs
-- ⚡ **Optimized Performance** — parallel pg_dump and multipart S3 uploads
+- ⚡ **Optimized Performance** — streaming compression, PostgreSQL native compression, and multipart S3 uploads
 - 🐳 **Docker Ready** — portable, lightweight container  
 - 🚀 **Deployment Templates** — no fork required for normal usage
 - 🪣 **S3-Compatible Storage** — works with R2, AWS S3, Wasabi, B2, MinIO
@@ -60,6 +60,7 @@ R2_ACCESS_KEY=          # Access key
 R2_SECRET_KEY=          # Secret key
 S3_REGION=us-east-1     # Required for AWS S3 (ignored by R2/MinIO)
 
+RUN_ONCE=false          # Run once and exit instead of scheduler (set true for Railway Cron)
 BACKUP_PASSWORD=        # Optional: enables 7z encryption
 BACKUP_TIME=00:00       # Daily backup time (UTC, HH:MM)
 ```
@@ -115,7 +116,28 @@ You can configure the backup schedule using **Railway Cron Jobs**:
 - Adjust `MAX_BACKUPS` to match your schedule
 
 > If you use Railway Cron Jobs, the service will start once per execution.
-> In this case, the internal scheduler is ignored after startup.
+> In this setup, the service is expected to run a single backup and exit. Any internal scheduler should not be relied on.
+> Ensure the backup process exits cleanly after completion; otherwise, Railway will skip subsequent cron executions.
+
+---
+
+### 🔁 Cron Mode (Important)
+
+When using Railway Cron Jobs, you must enable one-shot mode:
+
+```env
+RUN_ONCE=true
+```
+
+This ensures the service:
+
+- runs a single backup  
+- exits cleanly after completion  
+
+If not set, the service will run continuously and future cron executions may be skipped.
+
+> `BACKUP_TIME` is only used when `RUN_ONCE=false` (daemon mode).  
+> When using Railway Cron (`RUN_ONCE=true`), scheduling is controlled by Railway.
 
 ---
 
